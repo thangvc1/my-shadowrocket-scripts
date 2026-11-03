@@ -1,106 +1,113 @@
 // ============================================================
-// LOCKET ULTIMATE UNLOCKER (Deep-Force JSON Patching)
-// Kết hợp 45s/Mic và thuật toán quét mở khóa AI/Filter từ V6
+// LOCKET REMOTE CONFIG - SAFE INJECT (Dựa trên V6 của ngominhduc)
+// Đảm bảo hiện UI, không gây lỗi giao diện
 // ============================================================
 
 var ua = $request.headers["User-Agent"] || $request.headers["user-agent"] || "";
 var obj = JSON.parse($response.body);
 
-// Hàm đệ quy quét toàn bộ JSON để bẻ khóa AI và Filter
-function deepForceUnlock(node) {
-    if (!node || typeof node !== "object") return node;
+// Hàm tiêm cấu hình an toàn từ V6 (không phá hỏng cấu trúc UI)
+function injectFirebaseRemoteConfig(obj) {
+    if (!obj || typeof obj !== "object") obj = {};
+    if (!obj.entries || typeof obj.entries !== "object") obj.entries = {};
 
-    if (Array.isArray(node)) {
-        for (let i = 0; i < node.length; i++) {
-            deepForceUnlock(node[i]);
-        }
-        return node;
-    }
+    const quotaStr = "999999";
 
-    // Quét qua từng key trong object
-    for (const key of Object.keys(node)) {
-        const lowKey = key.toLowerCase();
-        const val = node[key];
+    const forcedEntries = {
+        "locket_gold_enabled": "true",
+        "is_gold_user": "true",
+        "bypass_gold_paywall": "true",
+        "disable_gold_paywall": "true",
+        "show_gold_paywall": "false",
+        "force_gold_for_effects": "false",
+        "require_gold_for_effects": "false",
+        "require_gold_for_holiday_effects": "false",
+        "require_gold_for_filters": "false",
+        "require_gold_for_ai_looks": "false",
+        "lock_holiday_effects": "false",
+        "lock_camera_effects": "false",
+        "lock_ai_filters": "false",
+        "blur_locked_effects": "false",
+        "all_effects_free": "true",
+        "unlock_all_effects": "true",
+        "unlock_all_filters": "true",
+        "camera_effects_enabled": "true",
+        "ai_filter_enabled": "true",
+        "ai_filters_enabled": "true",
+        "enable_ai_filters": "true",
+        "enable_ai_looks": "true",
+        "create_look_enabled": "true",
+        "photobooth_enabled": "true",
+        "photobooth_frames_enabled": "true",
+        "ai_filter_free_uses": quotaStr,
+        "ai_filter_daily_limit": quotaStr,
+        "ai_filter_quota": quotaStr,
+        "ai_looks_free_uses": quotaStr,
+        "ai_generation_limit": quotaStr,
+        "custom_look_daily_limit": quotaStr
+    };
 
-        // 1. Ép số lượt AI thành 999999
-        if (lowKey.includes("ai_filter_quota") || lowKey.includes("ai_filter_remaining") || lowKey.includes("remaining_uses") || lowKey.includes("ai_credits")) {
-            if (typeof val === "number" || typeof val === "string") {
-                node[key] = 999999;
+    // Quét qua các key hiện có và thay thế nếu cần
+    for (const existingKey of Object.keys(obj.entries)) {
+        const low = existingKey.toLowerCase();
+        const rawVal = obj.entries[existingKey];
+
+        if (low.includes("ai") || low.includes("filter") || low.includes("look") || low.includes("effect") || low.includes("holiday")) {
+            if (low.includes("limit") || low.includes("quota") || low.includes("max") || low.includes("count") || low.includes("remaining") || low.includes("uses")) {
+                obj.entries[existingKey] = quotaStr;
+            } else if (low.includes("gold_only") || low.includes("require_gold") || low.includes("is_locked") || low.includes("locked") || low.includes("paywall") || low.includes("blur") || low.includes("premium_only")) {
+                obj.entries[existingKey] = "false";
+            } else if (low.includes("enable") || low.includes("allow") || low.includes("active") || low.includes("show") || low.includes("free") || low.includes("unlock")) {
+                obj.entries[existingKey] = "true";
             }
         }
-        
-        // 2. Bẻ khóa các cờ khóa Filter/AI/Photobooth
-        else if (lowKey.includes("gold_only") || lowKey.includes("require_gold") || lowKey.includes("is_locked") || lowKey.includes("paywall") || lowKey.includes("blur") || lowKey === "locked") {
-            if (typeof val === "boolean") node[key] = false;
-            else if (typeof val === "string" && (val === "true" || val === "1")) node[key] = "false";
-        }
-
-        // 3. Bật các cờ cho phép sử dụng
-        else if (lowKey.includes("is_gold") || lowKey.includes("has_gold") || lowKey.includes("is_unlocked") || lowKey.includes("can_use")) {
-            if (typeof val === "boolean") node[key] = true;
-            else if (typeof val === "string" && (val === "false" || val === "0")) node[key] = "true";
-        }
-
-        // Đệ quy đi sâu vào bên trong
-        if (typeof val === "object" && val !== null) {
-            deepForceUnlock(val);
-        }
     }
-    return node;
+
+    // Ghi đè các key cưỡng bức
+    for (const [k, v] of Object.entries(forcedEntries)) {
+        obj.entries[k] = v;
+    }
+
+    obj.state = "UPDATE";
+    return obj;
 }
 
 if (ua.includes("Locket")) {
+    // 1. Chạy hàm tiêm cấu hình VIP an toàn
+    obj = injectFirebaseRemoteConfig(obj);
+
     obj.entries = obj.entries || {};
 
-    // 1. Kích hoạt VIP cấp gốc
-    Object.assign(obj.entries, {
-        is_premium: "true",
-        is_gold: "true",
-        premium: "true",
-        bypass_gold_paywall: "true",
-        unlock_all_effects: "true",
-        ai_filter_quota: "999999"
-    });
-
-    // 2. Ghi đè Feature Gates
-    var gates = {};
-    try { if (obj.entries.feature_gates) gates = JSON.parse(obj.entries.feature_gates); } catch(e) {}
-    Object.assign(gates, {
-        longer_video: "enabled",
-        custom_widget_frames: "enabled",
-        photobooth: "enabled",
-        ai_filters: "enabled",
-        gen_ai: "enabled",
-        camera_filter: "enabled"
-    });
-    obj.entries.feature_gates = JSON.stringify(gates);
-
-    // 3. Khôi phục cấu hình 45s & Mic
-    var DUR = 45.0;
-    obj.entries.camera = JSON.stringify({
-        gold_max_duration: DUR, goldMaxDuration: DUR,
-        max_duration: DUR, maxDuration: DUR,
-        ultra_wide: true, telephoto: true,
+    // 2. Cấu hình Camera 45s & Mic (Giữ nguyên để đảm bảo không mất tính năng)
+    var MY_VIDEO_DURATION = 45.0;
+    var cameraConfig = {
+        gold_max_duration: MY_VIDEO_DURATION,
+        goldMaxDuration: MY_VIDEO_DURATION,
+        max_duration: MY_VIDEO_DURATION,
+        maxDuration: MY_VIDEO_DURATION,
         enable_audio: true, microphone_enabled: true
-    });
-    obj.entries.camera_roll = JSON.stringify({
-        gold_max_duration: DUR, goldMaxDuration: DUR,
-        video_max_duration: DUR, videoMaxDuration: DUR,
-        max_duration: DUR, maxDuration: DUR
-    });
-    
-    var durStr = DUR.toString();
+    };
+    var cameraRollConfig = {
+        gold_max_duration: MY_VIDEO_DURATION,
+        goldMaxDuration: MY_VIDEO_DURATION,
+        video_max_duration: MY_VIDEO_DURATION,
+        videoMaxDuration: MY_VIDEO_DURATION,
+        max_duration: MY_VIDEO_DURATION,
+        maxDuration: MY_VIDEO_DURATION,
+        enable_audio: true, microphone_enabled: true
+    };
+
+    obj.entries.camera = JSON.stringify(cameraConfig);
+    obj.entries.camera_roll = JSON.stringify(cameraRollConfig);
+
+    var durationStr = MY_VIDEO_DURATION.toString();
     Object.assign(obj.entries, {
-        max_video_duration: durStr, video_max_duration: durStr,
-        video_sound_enabled: "true", microphone_enabled: "true", camera_microphone_enabled: "true"
+        max_video_duration: durationStr,
+        video_max_duration: durationStr,
+        video_sound_enabled: "true",
+        microphone_enabled: "true",
+        camera_microphone_enabled: "true"
     });
-
-    // 4. Xóa bỏ các cấu hình tĩnh gây lỗi UI từ các bản trước
-    delete obj.entries.camera_filter_config;
-    delete obj.entries.widget_frames_config;
-
-    // 5. CHẠY HÀM QUÉT SÂU ĐỂ BẺ KHÓA TOÀN BỘ CỜ ẨN
-    obj = deepForceUnlock(obj);
 }
 
 $done({ body: JSON.stringify(obj) });
