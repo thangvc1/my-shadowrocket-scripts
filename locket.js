@@ -1,12 +1,13 @@
 // ============================================================
-// Locket Remote Config Rewrite - FIXED 100% (45s, Mic, AI, Photobooth)
+// Locket Remote Config Rewrite - FULL FEATURES
+// Đã fix: 45s, Mic, Filter, AI, Photobooth & Khung
 // ============================================================
 
 var ua = $request.headers["User-Agent"] || $request.headers["user-agent"] || "";
 var obj = JSON.parse($response.body);
 
 if (ua.includes("Locket")) {
-    obj.Attention = "Bản siêu hoàn chỉnh - Đã fix 45s, Mic, AI, Photobooth & Khung";
+    obj.Attention = "Bản FULL: Gold + 45s + Mic + AI + Photobooth + Filter";
     obj.entries = obj.entries || {};
 
     // ============================================================
@@ -27,9 +28,12 @@ if (ua.includes("Locket")) {
             video: "enabled",
             custom_widget_frames: "enabled",
             streak_recovery: "enabled",
-            photobooth: "enabled", // Kích hoạt Photobooth
-            ai_filters: "enabled", // Kích hoạt Filter AI
-            gen_ai: "enabled"      // Kích hoạt Gen AI
+            photobooth: "enabled",     // Kích hoạt Photobooth
+            ai_filters: "enabled",     // Kích hoạt Filter AI
+            gen_ai: "enabled",         // Kích hoạt Gen AI
+            camera_filter: "enabled",  // Kích hoạt Camera Filter
+            microphone: "enabled",     // Kích hoạt Mic
+            long_video: "enabled"      // Kích hoạt Video dài
         }),
         upsell_features: JSON.stringify({
             app_icon_picker: true,
@@ -37,7 +41,11 @@ if (ua.includes("Locket")) {
             camera_theme: true,
             locket_views: true,
             remove_ads: true,
-            custom_widget_frames: true
+            custom_widget_frames: true,
+            photobooth: true,
+            ai_filters: true,
+            gen_ai: true,
+            longer_video: true
         }),
         paywall_presentation_config: JSON.stringify({
             uid: "paywall_testflight",
@@ -50,7 +58,9 @@ if (ua.includes("Locket")) {
         android_subscribe_gold_button_enabled: "false",
         profile_badge_visible: "true",
         lunar_new_year_app_icon_enabled: "true",
-        photobooth_enabled: "true", // Bật giao diện Photobooth
+        photobooth_enabled: "true",     // Bật giao diện Photobooth
+        ai_filters_enabled: "true",
+        gen_ai_enabled: "true",
         collage_enabled: "true"
     });
 
@@ -94,7 +104,10 @@ if (ua.includes("Locket")) {
         srgb: true,
         lanczos: true,
         quality_mbps: 0.6,
-        qualityMbps: 0.6
+        qualityMbps: 0.6,
+        enable_audio: true,
+        audio_enabled: true,
+        microphone_enabled: true
     };
 
     var cameraRollConfig = {
@@ -127,7 +140,8 @@ if (ua.includes("Locket")) {
             catch_up: true,
             widget_looping_mode: "never"
         }),
-        // Đã khôi phục danh sách filter của bạn để hiện nút Filter
+        
+        // ---- BỘ LỌC CAMERA (FIX LỖI KHÔNG HIỆN MỤC FILTER) ----
         camera_filter_config: JSON.stringify({
             allows_custom_filters: true,
             show_filter_button: true,
@@ -151,11 +165,16 @@ if (ua.includes("Locket")) {
                 "lucky_face", "sweet_hearts", "elf_cutout", "santa_cutout", "frosty"
             ]
         }),
+        camera_filter_enabled: "true",
+        camera_filters_enabled: "true",
+
         camera_roll_preview_enabled: "true",
         camera_roll_video_enabled: "true",
         camera_roll_video_upload_enabled: "true",
         internal_camera_roll_video_upload_enabled: "true",
         longer_camera_roll_videos_enabled: "true",
+        
+        // Các khóa phòng thủ cho thời lượng 45s
         camera_roll_video_max_duration: durationStr,
         camera_roll_max_duration: durationStr,
         camera_roll_duration: durationStr,
@@ -165,13 +184,22 @@ if (ua.includes("Locket")) {
         trim_max_duration: durationStr,
         gold_max_duration: durationStr,
         goldMaxDuration: durationStr,
+        max_capture_duration: durationStr,
+        
         max_file_size: "104857600",
         max_upload_bytes: "104857600",
-        video_quality_mbps: "0.",
+        
+        // Các khóa phòng thủ cho Âm thanh / Mic
+        video_quality_mbps: "0.6",
         video_sound_enabled: "true",
         microphone_enabled: "true",
         camera_microphone_enabled: "true",
         audio_session_deactivation_enabled: "true",
+        enable_audio: "true",
+        audio_enabled: "true",
+        record_audio: "true",
+        mic_enabled: "true",
+        
         zoom_enabled: "true",
         upload_main: "false",
         upload_main_image_quality: "0.6",
@@ -190,6 +218,7 @@ if (ua.includes("Locket")) {
         show_friend_limit_on_cam: "false",
         signup_max_friends_count: "999999",
         celebrity_inbox_limit: "999999",
+        friend_limit_geo_override: JSON.stringify({ experiments: {}, area_code_overrides: {} }),
         new_friends_monitoring_enabled: "true",
         improved_friend_suggestions: "true",
         show_friend_suggestions_by_default: "true",
@@ -246,7 +275,7 @@ if (ua.includes("Locket")) {
     });
 
     // ============================================================
-    // 6. WIDGET, THÔNG BÁO, GIAO DIỆN & KHUNG ẢNH (XÓA LỖI)
+    // 6. WIDGET, THÔNG BÁO, GIAO DIỆN & KHUNG ẢNH (ĐÃ FIX LỖI PHOTOBOOTH)
     // ============================================================
     Object.assign(obj.entries, {
         widget_frame_event_max_images: "10",
@@ -257,11 +286,21 @@ if (ua.includes("Locket")) {
         widget_last_sent_indicator: "false",
         widget_sync_token_reload_mode: "clearTokenNever",
         
+        // Bật khung Custom (BẮT BUỘC PHẢI XÓA widget_frames_config CỦA BẢN CŨ)
         custom_widget_frames: "enabled",
         custom_widget_frames_enabled: "true",
         
-        // Đã xóa widget_frames_config lỗi ("royal_gold_vip") để Locket dùng khung thật
-        
+        // FIX LỖI PHOTOBOOTH KHÔNG HIỆN CHỌN KHUNG
+        photobooth_enabled: "true",
+        photobooth_frames_enabled: "true",
+        photobooth_frame_picker_enabled: "true",
+        photobooth_show_frame_picker: "true",
+        photobooth_frames: JSON.stringify({
+            enabled: true,
+            show_picker: true,
+            allow_custom: true
+        }),
+
         live_activity_onboarding: "true",
         live_activity_onboarding_variant: "friending",
         register_live_activity_push_to_start_token: "true",
@@ -292,7 +331,7 @@ if (ua.includes("Locket")) {
     });
 
     // ============================================================
-    // 7. OVERLAY & CUSTOM CAPTIONS (GIỮ NGUYÊN 100%)
+    // 7. OVERLAY & CUSTOM CAPTIONS
     // ============================================================
     Object.assign(obj.entries, {
         overlay_navigator_enabled: "true",
