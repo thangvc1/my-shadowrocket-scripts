@@ -1,87 +1,106 @@
 // ============================================================
-// Locket Remote Config - NATIVE UI UNLOCK (Perfect Fix)
-// Khôi phục 45s, Mic. Bật AI, Photobooth. Không can thiệp UI.
+// LOCKET ULTIMATE UNLOCKER (Deep-Force JSON Patching)
+// Kết hợp 45s/Mic và thuật toán quét mở khóa AI/Filter từ V6
 // ============================================================
 
 var ua = $request.headers["User-Agent"] || $request.headers["user-agent"] || "";
 var obj = JSON.parse($response.body);
 
+// Hàm đệ quy quét toàn bộ JSON để bẻ khóa AI và Filter
+function deepForceUnlock(node) {
+    if (!node || typeof node !== "object") return node;
+
+    if (Array.isArray(node)) {
+        for (let i = 0; i < node.length; i++) {
+            deepForceUnlock(node[i]);
+        }
+        return node;
+    }
+
+    // Quét qua từng key trong object
+    for (const key of Object.keys(node)) {
+        const lowKey = key.toLowerCase();
+        const val = node[key];
+
+        // 1. Ép số lượt AI thành 999999
+        if (lowKey.includes("ai_filter_quota") || lowKey.includes("ai_filter_remaining") || lowKey.includes("remaining_uses") || lowKey.includes("ai_credits")) {
+            if (typeof val === "number" || typeof val === "string") {
+                node[key] = 999999;
+            }
+        }
+        
+        // 2. Bẻ khóa các cờ khóa Filter/AI/Photobooth
+        else if (lowKey.includes("gold_only") || lowKey.includes("require_gold") || lowKey.includes("is_locked") || lowKey.includes("paywall") || lowKey.includes("blur") || lowKey === "locked") {
+            if (typeof val === "boolean") node[key] = false;
+            else if (typeof val === "string" && (val === "true" || val === "1")) node[key] = "false";
+        }
+
+        // 3. Bật các cờ cho phép sử dụng
+        else if (lowKey.includes("is_gold") || lowKey.includes("has_gold") || lowKey.includes("is_unlocked") || lowKey.includes("can_use")) {
+            if (typeof val === "boolean") node[key] = true;
+            else if (typeof val === "string" && (val === "false" || val === "0")) node[key] = "true";
+        }
+
+        // Đệ quy đi sâu vào bên trong
+        if (typeof val === "object" && val !== null) {
+            deepForceUnlock(val);
+        }
+    }
+    return node;
+}
+
 if (ua.includes("Locket")) {
-    obj.Attention = "FULL VIP - Đã kích hoạt AI, Photobooth & 45s!";
     obj.entries = obj.entries || {};
 
-    // 1. KÍCH HOẠT CỜ VIP (Ép App mở khóa tính năng)
+    // 1. Kích hoạt VIP cấp gốc
     Object.assign(obj.entries, {
         is_premium: "true",
         is_gold: "true",
         premium: "true",
-        
-        feature_gates: JSON.stringify({
-            app_icon_picker: "enabled", camera_roll: "enabled", camera_theme: "enabled",
-            locket_views: "enabled", long_captions: "enabled", longer_video: "enabled",
-            unlimited_friends: "enabled", priority_support: "enabled", profile_badge: "enabled",
-            remove_ads: "enabled", video: "enabled", custom_widget_frames: "enabled",
-            streak_recovery: "enabled", photobooth: "enabled", ai_filters: "enabled",
-            gen_ai: "enabled", camera_filter: "enabled"
-        }),
-        
-        // Bật cờ cho AI và Photobooth (Nhưng KHÔNG chèn danh sách Filter/Khung ảo)
-        photobooth_enabled: "true",
-        ai_filters_enabled: "true",
-        gen_ai_enabled: "true",
-        collage_enabled: "true",
-        
-        history_ads_mode: "off",
-        sentry_sample_rate: "0"
+        bypass_gold_paywall: "true",
+        unlock_all_effects: "true",
+        ai_filter_quota: "999999"
     });
 
-    // 2. KHÔI PHỤC 45S & MIC (Bản chuẩn của DINH DUY VINH)
-    var MY_VIDEO_DURATION = 45.0;
+    // 2. Ghi đè Feature Gates
+    var gates = {};
+    try { if (obj.entries.feature_gates) gates = JSON.parse(obj.entries.feature_gates); } catch(e) {}
+    Object.assign(gates, {
+        longer_video: "enabled",
+        custom_widget_frames: "enabled",
+        photobooth: "enabled",
+        ai_filters: "enabled",
+        gen_ai: "enabled",
+        camera_filter: "enabled"
+    });
+    obj.entries.feature_gates = JSON.stringify(gates);
+
+    // 3. Khôi phục cấu hình 45s & Mic
+    var DUR = 45.0;
+    obj.entries.camera = JSON.stringify({
+        gold_max_duration: DUR, goldMaxDuration: DUR,
+        max_duration: DUR, maxDuration: DUR,
+        ultra_wide: true, telephoto: true,
+        enable_audio: true, microphone_enabled: true
+    });
+    obj.entries.camera_roll = JSON.stringify({
+        gold_max_duration: DUR, goldMaxDuration: DUR,
+        video_max_duration: DUR, videoMaxDuration: DUR,
+        max_duration: DUR, maxDuration: DUR
+    });
     
-    var cameraConfig = {
-        gold_max_duration: MY_VIDEO_DURATION, goldMaxDuration: MY_VIDEO_DURATION,
-        max_duration: MY_VIDEO_DURATION, maxDuration: MY_VIDEO_DURATION,
-        ultra_wide: true, ultraWide: true, volume_button: true, volumeButton: true,
-        flash_button: true, telephoto: true, srgb: true, lanczos: true,
-        quality_mbps: 0.6, qualityMbps: 0.6, enable_audio: true, microphone_enabled: true
-    };
-
-    var cameraRollConfig = {
-        gold_max_duration: MY_VIDEO_DURATION, goldMaxDuration: MY_VIDEO_DURATION,
-        video_max_duration: MY_VIDEO_DURATION, videoMaxDuration: MY_VIDEO_DURATION,
-        max_duration: MY_VIDEO_DURATION, maxDuration: MY_VIDEO_DURATION,
-        trim_max_duration: MY_VIDEO_DURATION, trimMaxDuration: MY_VIDEO_DURATION,
-        camera_roll_max_duration: MY_VIDEO_DURATION, camera_roll_video_max_duration: MY_VIDEO_DURATION,
-        max_file_size: 104857600, max_upload_bytes: 104857600, max_size_bytes: 104857600,
-        quality_mbps: 0.6, qualityMbps: 0.6, flash_button: true
-    };
-
-    obj.entries.camera = JSON.stringify(cameraConfig);
-    obj.entries.camera_roll = JSON.stringify(cameraRollConfig);
-
-    var durationStr = MY_VIDEO_DURATION.toString();
+    var durStr = DUR.toString();
     Object.assign(obj.entries, {
-        max_video_duration: durationStr, video_max_duration: durationStr,
-        camera_roll_max_duration: durationStr, max_capture_duration: durationStr,
-        
-        // Khôi phục Mic
-        video_sound_enabled: "true", microphone_enabled: "true", 
-        camera_microphone_enabled: "true", audio_session_deactivation_enabled: "true",
-        record_audio: "true", enable_audio: "true",
-        
-        // CÁC TÍNH NĂNG KHÁC
-        camera_roll_preview_enabled: "true", camera_roll_video_enabled: "true",
-        camera_roll_video_upload_enabled: "true", longer_camera_roll_videos_enabled: "true",
-        max_friends_count: "999999", moment_views_enabled: "true",
-        chat_reactions_enabled: "true", custom_profile_pics: "true"
+        max_video_duration: durStr, video_max_duration: durStr,
+        video_sound_enabled: "true", microphone_enabled: "true", camera_microphone_enabled: "true"
     });
 
-    // 3. TUYỆT ĐỐI KHÔNG CHÈN camera_filter_config VÀO ĐÂY NỮA
-    // Để App tự gọi API getFilters (đã trả về 200 OK) và tự vẽ giao diện.
-    // Tương tự, xóa bỏ widget_frames_config để App tự tải Khung Photobooth.
+    // 4. Xóa bỏ các cấu hình tĩnh gây lỗi UI từ các bản trước
     delete obj.entries.camera_filter_config;
     delete obj.entries.widget_frames_config;
-    delete obj.entries.widget_frame_styles;
+
+    // 5. CHẠY HÀM QUÉT SÂU ĐỂ BẺ KHÓA TOÀN BỘ CỜ ẨN
+    obj = deepForceUnlock(obj);
 }
 
 $done({ body: JSON.stringify(obj) });
