@@ -1,82 +1,77 @@
 // ============================================================
-// LOCKET SERVER-LEVEL UNLOCKER (Dựa trên Raw Payload gốc)
-// Fix 100%: AI Filter, Photobooth, 60s, Mic, Không lỗi UI
+// LOCKET FIXED - SERVER PAYLOAD EXACT MATCH (45s + Mic + AI + Filter)
 // ============================================================
-
 var ua = $request.headers["User-Agent"] || $request.headers["user-agent"] || "";
 var obj = JSON.parse($response.body);
 
 if (ua.includes("Locket")) {
     obj.entries = obj.entries || {};
+    var DUR = 45.0;
 
-    // 1. GHI ĐÈ FEATURE GATES BẰNG CẤU TRÚC CHUẨN CỦA SERVER
-    obj.entries["feature_gates"] = JSON.stringify({
-        "app_icon_picker": "enabled",
-        "camera_roll": "enabled",
-        "camera_roll_video": "enabled",
-        "video_upload": "enabled",
-        "audio_recording": "enabled",     // Kích hoạt Mic
-        "video_sound": "enabled",         // Kích hoạt Âm thanh
-        "camera_theme": "enabled",
-        "locket_views": "enabled",
-        "long_captions": "enabled",
-        "longer_video": "enabled",
-        "longerVideo": "enabled",
-        "video": "enabled",
-        "unlimited_friends": "enabled",
-        "priority_support": "subscriber", // Cờ chuẩn của Server
-        "profile_badge": "subscriber",
-        "profileBadge": "subscriber",
-        "gold_badge": "subscriber",
-        "goldBadge": "subscriber",
-        "remove_ads": "subscriber",
-        "custom_widget_frames": "enabled",
-        "widget_frame": "enabled",
-        "widget_frame_event": "enabled",
-        "streak_recovery": "enabled",
-        "ai_camera_filters": "enabled",   // Kích hoạt AI
-        "photobooth": "enabled",          // Kích hoạt Photobooth
-        "custom_camera_filters": "enabled",
-        "live_photos": "enabled",
-        "live_photos_capture": "enabled",
-        "live_photos_viewing": "enabled"
+    // 1. CẤU HÌNH CAMERA (Lấy chuẩn từ bản chạy tốt của bạn, không dùng 60s)
+    var cameraConfig = {
+        gold_max_duration: DUR, goldMaxDuration: DUR,
+        max_duration: DUR, maxDuration: DUR,
+        ultra_wide: true, ultraWide: true, volume_button: true, volumeButton: true,
+        flash_button: true, telephoto: true, srgb: true, lanczos: true,
+        quality_mbps: 0.6, qualityMbps: 0.6,
+        filters: true, effects: true, microphone: true
+    };
+    var cameraRollConfig = {
+        gold_max_duration: DUR, goldMaxDuration: DUR,
+        video_max_duration: DUR, videoMaxDuration: DUR,
+        max_duration: DUR, maxDuration: DUR, trim_max_duration: DUR, trimMaxDuration: DUR,
+        camera_roll_max_duration: DUR, camera_roll_video_max_duration: DUR,
+        max_file_size: 104857600, max_upload_bytes: 104857600, max_size_bytes: 104857600,
+        quality_mbps: 0.6, qualityMbps: 0.6, flash_button: true
+    };
+
+    obj.entries.camera = JSON.stringify(cameraConfig);
+    obj.entries.camera_roll = JSON.stringify(cameraRollConfig);
+
+    // 2. CẤU HÌNH ÂM THANH & THỜI LƯỢNG
+    var durStr = DUR.toString();
+    Object.assign(obj.entries, {
+        max_video_duration: durStr,
+        video_max_duration: durStr,
+        gold_max_duration: durStr,
+        goldMaxDuration: durStr,
+        camera_roll_max_duration: durStr,
+        camera_microphone_enabled: "true",
+        microphone_enabled: "true",
+        video_sound_enabled: "true",
+        is_premium: "true",
+        is_gold: "true"
     });
 
-    // 2. CẤU HÌNH CAMERA 60S & MIC (Lấy chuẩn từ Server)
-    obj.entries["gold_max_duration"] = "60.0";
-    obj.entries["goldMaxDuration"] = "60.0";
-    obj.entries["video_max_duration"] = "60.0";
-    obj.entries["max_video_duration"] = "60.0";
-    obj.entries["microphone_enabled"] = "true";
-    obj.entries["camera_microphone_enabled"] = "true";
-    obj.entries["video_sound_enabled"] = "true";
-
-    obj.entries["camera"] = JSON.stringify({
-        "gold_max_duration": 60, "goldMaxDuration": 60,
-        "video_max_duration": 60, "videoMaxDuration": 60,
-        "ultra_wide": true, "ultraWide": true,
-        "volume_button": true, "volumeButton": true,
-        "flash_button": true, "telephoto": true,
-        "srgb": true, "quality_mbps": 1.2, "qualityMbps": 1.2,
-        "filters": true, "effects": true, "microphone": true,
-        "lanczos": true, "grid": true, "night_mode": true
+    // 3. FEATURE GATES (Sử dụng chính xác từ khóa "enabled" và "subscriber" từ Server)
+    var gates = {};
+    try { if (obj.entries.feature_gates) gates = JSON.parse(obj.entries.feature_gates); } catch(e) {}
+    Object.assign(gates, {
+        "app_icon_picker": "enabled", "camera_roll": "enabled", "camera_roll_video": "enabled",
+        "video_upload": "enabled", "audio_recording": "enabled", "video_sound": "enabled",
+        "camera_theme": "enabled", "locket_views": "enabled", "long_captions": "enabled",
+        "longer_video": "enabled", "longerVideo": "enabled", "video": "enabled",
+        "unlimited_friends": "enabled", "priority_support": "subscriber", "profile_badge": "subscriber",
+        "profileBadge": "subscriber", "gold_badge": "subscriber", "goldBadge": "subscriber",
+        "remove_ads": "subscriber", "custom_widget_frames": "enabled", "widget_frame": "enabled",
+        "widget_frame_event": "enabled", "streak_recovery": "enabled", "music_caption": "enabled",
+        "reactions_v2": "enabled", "send_to_self": "enabled", "audience_selection": "enabled",
+        "private_post": "enabled", "link_caption": "enabled", "video_reactions": "enabled",
+        "star_signs": "enabled", "custom_fonts": "enabled", "camera_ultra_wide": "enabled",
+        "voice_notes": "enabled", "hd_moments": "enabled", "live_photos": "enabled",
+        "live_photo": "enabled", "live_photos_capture": "enabled", "live_photos_viewing": "enabled",
+        "gold_camera_themes": "enabled", "ai_camera_filters": "enabled", "photobooth": "enabled"
     });
+    obj.entries.feature_gates = JSON.stringify(gates);
 
-    obj.entries["camera_roll"] = JSON.stringify({
-        "flash_button": true, "video_picker_enabled": true,
-        "allows_video": true, "multi_select": true,
-        "video_max_duration": 60, "videoMaxDuration": 60,
-        "max_file_size_bytes": 52428800, "maxFileSizeBytes": 52428800
-    });
-
-    // 3. CẤU HÌNH AI FILTER & PHOTOBOOTH (Lấy chuẩn từ File bạn gửi)
+    // 4. CẤU HÌNH AI FILTER & PHOTOBOOTH (Bơm chuẩn xác từ Payload Server)
     obj.entries["camera_filter_storage_bucket"] = "gs://locket-filters";
     obj.entries["camera_filter_fetch_cache_max_age_seconds"] = "0";
     obj.entries["camera_filter_custom_prompts_enabled"] = "true";
     obj.entries["ai_camera_filters_enabled"] = "true";
     obj.entries["custom_camera_filters_enabled"] = "true";
 
-    // Bơm nguyên văn cấu trúc Filter AI chuẩn của Locket
     obj.entries["camera_filter_config"] = JSON.stringify({
         "showFilterButton": true, "sheetEnabled": true, "allowsCustomFilters": true,
         "referenceImageAttachmentEnabled": true, "customPromptEnabled": true,
@@ -113,11 +108,6 @@ if (ua.includes("Locket")) {
             ]}
         ]
     });
-
-    // 4. Bật các cờ VIP tổng (Dành cho Paywall)
-    obj.entries["is_premium"] = "true";
-    obj.entries["is_gold"] = "true";
-    obj.entries["unlimited_max_friend_count"] = "9999";
 }
 
 $done({ body: JSON.stringify(obj) });
