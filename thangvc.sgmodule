@@ -4,11 +4,11 @@
 [General]
 
 [MITM]
-hostname = %APPEND% api.revenuecat.com, firebaseremoteconfig.googleapis.com
+hostname = %APPEND% api.revenuecat.com, firebaseremoteconfig.googleapis.com, firebaseremoteconfigrealtime.googleapis.com, api.locketcamera.com
 
 [Script]
-# 1. Tùy chỉnh Feature, Video 45s & Caption cá nhân
-locket_remote = type=http-response, pattern=^https?:\/\/firebaseremoteconfig\.googleapis\.com\/v1\/projects\/locket-.*, script-path=https://raw.githubusercontent.com/thangvc1/my-shadowrocket-scripts/refs/heads/main/locket.js, requires-body=true, max-size=524288, timeout=60
+# 1. Tùy chỉnh Feature, Video 45s & Caption cá nhân (Đã fix bắt cả Realtime)
+locket_remote = type=http-response, pattern=^https?:\/\/firebaseremoteconfig.*\.googleapis\.com\/.*, script-path=https://raw.githubusercontent.com/thangvc1/my-shadowrocket-scripts/refs/heads/main/locket.js, requires-body=true, max-size=524288, timeout=60
 
 # 2. Xóa ETag Header chống dính Cache 
 deleteHeader = type=http-request, pattern=^https:\/\/api\.revenuecat\.com\/.+\/(receipts|subscribers), script-path=https://raw.githubusercontent.com/thangvc1/my-shadowrocket-scripts/refs/heads/main/deleteHeader.js, timeout=60
